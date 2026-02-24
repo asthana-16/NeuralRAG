@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Sign In — NeuralRAG{% endblock %}
+
+{% block auth_content %}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">🧠</div>
+      <div class="auth-title">NeuralRAG</div>
+      <div class="auth-sub">// sign in to your workspace</div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+      <div class="flash flash-{{ cat }}" style="margin-bottom:14px">
+        {% if cat=='success' %}✓{% elif cat=='error' %}✕{% elif cat=='warning' %}⚠{% else %}i{% endif %}
+        {{ msg }}
+      </div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('login') }}" autocomplete="off">
+      <div class="form-row">
+        <label>Username or Email</label>
+        <input type="text" name="identifier" placeholder="Enter username or email" required autofocus>
+      </div>
+
+      <div class="form-row">
+        <label>Password</label>
+        <div style="position:relative">
+          <input type="password" name="password" id="pwd" placeholder="Enter your password" required>
+          <button type="button" onclick="toggle('pwd',this)"
+            style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;">👁</button>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>CAPTCHA Verification</label>
+        <div class="captcha-box">
+          <img id="cap-img-login"
+               src="{{ captcha_img }}"
+               alt="CAPTCHA"
+               class="captcha-img"
+               width="220"
+               height="70"
+               onclick="refreshCaptcha('cap-img-login')"
+               title="Click to refresh"
+               style="border-radius:8px;border:1px solid var(--border);cursor:pointer">
+          <button type="button"
+                  class="btn btn-ghost btn-sm"
+                  onclick="refreshCaptcha('cap-img-login')"
+                  style="font-size:18px">↻</button>
+        </div>
+        <div style="margin-top:10px">
+          <input type="text"
+                 name="captcha"
+                 placeholder="· · · · ·"
+                 maxlength="5"
+                 autocomplete="off"
+                 required
+                 style="text-transform:uppercase;letter-spacing:6px;font-size:18px;text-align:center">
+        </div>
+        <div class="input-hint">// type the characters shown above (case-insensitive)</div>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:14px;margin-top:4px">
+        ⎆ Sign In
+      </button>
+    </form>
+
+    <hr>
+    <div style="text-align:center;font-size:13px;color:var(--text3)">
+      No account?
+      <a href="{{ url_for('register') }}" style="color:var(--primary);font-weight:700">Create one →</a>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggle(id, btn) {
+  const i = document.getElementById(id);
+  i.type = i.type === 'password' ? 'text' : 'password';
+  btn.textContent = i.type === 'password' ? '👁' : '🙈';
+}
+function refreshCaptcha(imgId) {
+  fetch('/captcha-refresh')
+    .then(r => r.json())
+    .then(d => { document.getElementById(imgId).src = d.image; });
+}
+</script>
+{% endblock %}

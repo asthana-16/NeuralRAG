@@ -1,0 +1,426 @@
+{% extends "base.html" %}
+{% block title %}Upload Document — NeuralRAG{% endblock %}
+{% block page_title %}⬆ Upload Document{% endblock %}
+{% block page_sub %}Import PDF or DOCX into your knowledge base{% endblock %}
+
+{% block content %}
+<style>
+  .upload-wrapper {
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  .upload-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px;
+  }
+
+  /* Drop Zone */
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 56px 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+    background: rgba(255,255,255,0.01);
+  }
+
+  .drop-zone:hover,
+  .drop-zone.dragover {
+    border-color: var(--primary);
+    background: rgba(88, 166, 255, 0.05);
+  }
+
+  .drop-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .drop-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    line-height: 1;
+    display: block;
+    opacity: 0.7;
+  }
+
+  .drop-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .drop-sub {
+    font-size: 12px;
+    color: var(--text3);
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* File Preview */
+  .file-preview {
+    display: none;
+    align-items: center;
+    gap: 14px;
+    margin-top: 20px;
+    padding: 14px 16px;
+    background: rgba(88,166,255,0.06);
+    border: 1px solid rgba(88,166,255,0.2);
+    border-radius: 10px;
+  }
+
+  .file-preview.visible {
+    display: flex;
+  }
+
+  .file-icon-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 800;
+    flex-shrink: 0;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+  }
+
+  .file-icon-badge.pdf {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239,68,68,0.3);
+  }
+
+  .file-icon-badge.docx {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+    border: 1px solid rgba(59,130,246,0.3);
+  }
+
+  .file-info { flex: 1; min-width: 0; }
+  .file-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .file-size {
+    font-size: 11px;
+    color: var(--text3);
+    font-family: 'Space Mono', monospace;
+    margin-top: 2px;
+  }
+
+  .file-remove {
+    background: none;
+    border: none;
+    color: var(--text3);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+  .file-remove:hover { color: var(--danger, #ef4444); }
+
+  /* Format badges */
+  .format-list {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+
+  .format-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-family: 'Space Mono', monospace;
+    border: 1px solid var(--border);
+    color: var(--text2);
+    background: rgba(255,255,255,0.02);
+  }
+
+  .format-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+  }
+
+  /* Progress bar */
+  .upload-progress {
+    display: none;
+    margin-top: 20px;
+  }
+
+  .upload-progress.visible { display: block; }
+
+  .progress-bar-wrap {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), #a78bfa);
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.3s ease;
+    animation: progress-pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes progress-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  .progress-label {
+    font-size: 11px;
+    color: var(--text3);
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* Submit button */
+  .upload-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 28px;
+    align-items: center;
+  }
+
+  .btn-upload {
+    flex: 1;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 700;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    letter-spacing: 0.3px;
+  }
+
+  .btn-upload:hover { opacity: 0.88; }
+  .btn-upload:active { transform: scale(0.98); }
+  .btn-upload:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Info section */
+  .upload-info {
+    margin-top: 28px;
+    padding: 16px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+  }
+
+  .upload-info-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+
+  .upload-info-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 6px;
+    line-height: 1.5;
+  }
+
+  .upload-info-row:last-child { margin-bottom: 0; }
+
+  .info-dot {
+    color: var(--primary);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+</style>
+
+<div class="upload-wrapper">
+  <div class="upload-card">
+
+    <form method="POST" enctype="multipart/form-data" id="uploadForm">
+
+      <!-- Drop Zone -->
+      <div class="drop-zone" id="dropZone">
+        <input type="file" name="file" id="fileInput" accept=".pdf,.docx" required>
+        <span class="drop-icon">📂</span>
+        <div class="drop-title">Drop your file here or click to browse</div>
+        <div class="drop-sub">PDF or DOCX &nbsp;·&nbsp; max 10 MB</div>
+      </div>
+
+      <!-- Supported formats -->
+      <div class="format-list">
+        <div class="format-badge">
+          <div class="format-dot" style="background:#ef4444"></div>
+          PDF Document
+        </div>
+        <div class="format-badge">
+          <div class="format-dot" style="background:#3b82f6"></div>
+          DOCX Word File
+        </div>
+        <div class="format-badge" style="margin-left:auto;border-color:transparent;color:var(--text3)">
+          Max 10 MB
+        </div>
+      </div>
+
+      <!-- File preview -->
+      <div class="file-preview" id="filePreview">
+        <div class="file-icon-badge" id="fileBadge">PDF</div>
+        <div class="file-info">
+          <div class="file-name" id="fileName">—</div>
+          <div class="file-size" id="fileSize">—</div>
+        </div>
+        <button type="button" class="file-remove" id="fileRemove" title="Remove file">✕</button>
+      </div>
+
+      <!-- Progress (shown on submit) -->
+      <div class="upload-progress" id="uploadProgress">
+        <div class="progress-label">⟳ Processing file…</div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="progressFill"></div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="upload-actions">
+        <a href="{{ url_for('documents') }}" class="btn btn-ghost" style="padding:12px 20px">← Back</a>
+        <button type="submit" class="btn-upload" id="submitBtn" disabled>
+          <span>⬆</span> Upload to Knowledge Base
+        </button>
+      </div>
+
+    </form>
+
+    <!-- Info box -->
+    <div class="upload-info">
+      <div class="upload-info-title">// What happens next</div>
+      <div class="upload-info-row">
+        <span class="info-dot">◆</span>
+        Text is extracted from your file automatically using PyPDF2 or python-docx.
+      </div>
+      <div class="upload-info-row">
+        <span class="info-dot">◆</span>
+        The document is saved to your knowledge base and indexed for RAG retrieval.
+      </div>
+      <div class="upload-info-row">
+        <span class="info-dot">◆</span>
+        You can then ask questions about it in any Chat session.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const dropZone   = document.getElementById('dropZone');
+  const fileInput  = document.getElementById('fileInput');
+  const filePreview = document.getElementById('filePreview');
+  const fileBadge  = document.getElementById('fileBadge');
+  const fileName   = document.getElementById('fileName');
+  const fileSize   = document.getElementById('fileSize');
+  const fileRemove = document.getElementById('fileRemove');
+  const submitBtn  = document.getElementById('submitBtn');
+  const uploadForm = document.getElementById('uploadForm');
+  const uploadProgress = document.getElementById('uploadProgress');
+  const progressFill   = document.getElementById('progressFill');
+
+  function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  }
+
+  function showFile(file) {
+    const ext = file.name.split('.').pop().toLowerCase();
+    fileBadge.textContent = ext.toUpperCase();
+    fileBadge.className = 'file-icon-badge ' + ext;
+    fileName.textContent = file.name;
+    fileSize.textContent = formatBytes(file.size);
+    filePreview.classList.add('visible');
+    submitBtn.disabled = false;
+  }
+
+  function clearFile() {
+    fileInput.value = '';
+    filePreview.classList.remove('visible');
+    submitBtn.disabled = true;
+  }
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) showFile(fileInput.files[0]);
+  });
+
+  fileRemove.addEventListener('click', clearFile);
+
+  // Drag & drop
+  ['dragenter','dragover'].forEach(ev => {
+    dropZone.addEventListener(ev, e => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+  });
+
+  ['dragleave','drop'].forEach(ev => {
+    dropZone.addEventListener(ev, e => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+    });
+  });
+
+  dropZone.addEventListener('drop', e => {
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      // Transfer to input
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      fileInput.files = dt.files;
+      showFile(file);
+    }
+  });
+
+  // Show progress animation on submit
+  uploadForm.addEventListener('submit', () => {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span>⟳</span> Uploading…';
+    uploadProgress.classList.add('visible');
+    // Animate progress bar
+    let w = 0;
+    const iv = setInterval(() => {
+      w = Math.min(w + Math.random() * 12, 90);
+      progressFill.style.width = w + '%';
+      if (w >= 90) clearInterval(iv);
+    }, 200);
+  });
+</script>
+{% endblock %}

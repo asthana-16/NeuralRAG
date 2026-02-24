@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — NeuralRAG{% endblock %}
+{% block page_title %}⬡ Dashboard{% endblock %}
+{% block page_sub %}overview / {{ session.username }}{% endblock %}
+
+{% block topbar_right %}
+  <a href="{{ url_for('chat_new') }}" class="btn btn-primary btn-sm">◉ New Chat</a>
+{% endblock %}
+
+{% block content %}
+<!-- STATS -->
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="sc-icon">◫</div>
+    <div class="sc-val" style="color:var(--primary)">{{ stats.docs }}</div>
+    <div class="sc-label">documents</div>
+  </div>
+  <div class="stat-card">
+    <div class="sc-icon">◈</div>
+    <div class="sc-val" style="color:var(--accent)">{{ stats.chats }}</div>
+    <div class="sc-label">chat sessions</div>
+  </div>
+  <div class="stat-card">
+    <div class="sc-icon">◉</div>
+    <div class="sc-val" style="color:var(--accent2)">{{ stats.msgs }}</div>
+    <div class="sc-label">messages sent</div>
+  </div>
+  <div class="stat-card">
+    <div class="sc-icon">◌</div>
+    <div class="sc-val" style="color:var(--warn)">{{ stats.words }}</div>
+    <div class="sc-label">total words</div>
+  </div>
+</div>
+
+<div class="grid-2" style="gap:24px;align-items:start">
+  <!-- RECENT DOCUMENTS -->
+  <div class="card">
+    <div class="card-title" style="justify-content:space-between">
+      <span><span class="ct-icon">◫</span> Recent Documents</span>
+      <a href="{{ url_for('documents') }}" class="btn btn-ghost btn-xs">View All</a>
+    </div>
+    {% if recent_docs %}
+    <div style="display:flex;flex-direction:column;gap:8px">
+      {% for doc in recent_docs %}
+      <a href="{{ url_for('doc_view', doc_id=doc.id) }}" style="text-decoration:none">
+        <div style="padding:12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);transition:.15s"
+             onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">{{ doc.title }}</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="badge badge-blue">{{ doc.category }}</span>
+            <span class="text-muted" style="font-size:11px">{{ doc.word_count }} words</span>
+            <span class="text-muted" style="font-size:11px;margin-left:auto">{{ doc.updated_at[:10] }}</span>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding:30px 0">
+      <div class="empty-icon">◫</div>
+      <div class="empty-title">No documents yet</div>
+      <div class="empty-sub">Add knowledge to power your RAG</div>
+      <a href="{{ url_for('doc_create') }}" class="btn btn-primary btn-sm" style="margin-top:12px">+ Add Document</a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- RECENT CHATS + CATEGORIES -->
+  <div style="display:flex;flex-direction:column;gap:20px">
+    <div class="card">
+      <div class="card-title" style="justify-content:space-between">
+        <span><span class="ct-icon">◈</span> Recent Chats</span>
+        <a href="{{ url_for('chat_list') }}" class="btn btn-ghost btn-xs">View All</a>
+      </div>
+      {% if recent_sessions %}
+      <div style="display:flex;flex-direction:column;gap:6px">
+        {% for s in recent_sessions %}
+        <a href="{{ url_for('chat_session', session_id=s.id) }}" style="text-decoration:none">
+          <div style="padding:10px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;gap:10px;transition:.15s"
+               onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="width:32px;height:32px;border-radius:8px;background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.2);display:flex;align-items:center;justify-content:center;font-size:14px">◈</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.title }}</div>
+              <div class="text-muted" style="font-size:11px">{{ s.msg_count }} messages · {{ s.created_at[:10] }}</div>
+            </div>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state" style="padding:20px 0">
+        <div style="font-size:13px;color:var(--text3)">No chats yet.</div>
+        <a href="{{ url_for('chat_new') }}" class="btn btn-green btn-sm" style="margin-top:10px">Start Chatting</a>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if categories %}
+    <div class="card card-sm">
+      <div class="card-title"><span class="ct-icon">◌</span> Categories</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        {% for cat in categories %}
+        <a href="{{ url_for('documents', cat=cat.category) }}" class="badge badge-purple" style="text-decoration:none">
+          {{ cat.category }} ({{ cat.cnt }})
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- QUICK START -->
+    <div class="card card-sm" style="background:rgba(88,166,255,.03);border-color:rgba(88,166,255,.15)">
+      <div class="card-title" style="color:var(--primary)"><span class="ct-icon">⬡</span> Quick Start</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="font-size:12px;color:var(--text3);font-family:'Space Mono',monospace;line-height:1.7">
+          1. Add documents to your knowledge base<br>
+          2. Configure your Anthropic API key in Settings<br>
+          3. Start a new chat and ask questions about your docs
+        </div>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <a href="{{ url_for('doc_create') }}" class="btn btn-ghost btn-xs">+ Add Doc</a>
+          <a href="{{ url_for('settings') }}" class="btn btn-ghost btn-xs">⚙ Settings</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

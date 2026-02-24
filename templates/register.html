@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Create Account — NeuralRAG{% endblock %}
+
+{% block auth_content %}
+<div class="auth-wrap">
+  <div class="auth-card" style="max-width:480px">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">⚡</div>
+      <div class="auth-title">Create Account</div>
+      <div class="auth-sub">// join the neural knowledge network</div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+      <div class="flash flash-{{ cat }}" style="margin-bottom:12px">
+        {% if cat=='success' %}✓{% elif cat=='error' %}✕{% elif cat=='warning' %}⚠{% else %}i{% endif %}
+        {{ msg }}
+      </div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('register') }}" autocomplete="off">
+      <div class="grid-2">
+        <div class="form-row" style="margin-bottom:0">
+          <label>Username *</label>
+          <input type="text" name="username" value="{{ username or '' }}"
+                 placeholder="e.g. neural_user" pattern="[a-zA-Z0-9_]{3,20}" required>
+          <div class="input-hint">3-20 chars, a-z 0-9 _</div>
+        </div>
+        <div class="form-row" style="margin-bottom:0">
+          <label>Full Name</label>
+          <input type="text" name="full_name" value="{{ full_name or '' }}" placeholder="Your name">
+        </div>
+      </div>
+
+      <div class="form-row" style="margin-top:16px">
+        <label>Email Address *</label>
+        <input type="email" name="email" value="{{ email or '' }}" placeholder="you@example.com" required>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-row" style="margin-bottom:0">
+          <label>Password *</label>
+          <div style="position:relative">
+            <input type="password" name="password" id="pwd1"
+                   placeholder="Min 8 characters" minlength="8" required oninput="checkStrength(this)">
+            <button type="button" onclick="toggle('pwd1',this)"
+              style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;">👁</button>
+          </div>
+          <div class="prog-bar" style="margin-top:6px"><div class="prog-fill" id="str-bar" style="width:0;background:var(--danger)"></div></div>
+          <div class="input-hint" id="str-label">// enter password</div>
+        </div>
+        <div class="form-row" style="margin-bottom:0">
+          <label>Confirm Password *</label>
+          <div style="position:relative">
+            <input type="password" name="confirm_password" id="pwd2"
+                   placeholder="Re-enter password" required oninput="checkMatch()">
+            <button type="button" onclick="toggle('pwd2',this)"
+              style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;">👁</button>
+          </div>
+          <div class="input-hint" id="match-label" style="margin-top:6px">// must match above</div>
+        </div>
+      </div>
+
+      <div class="form-row" style="margin-top:16px">
+        <label>CAPTCHA Verification *</label>
+        <div class="captcha-box">
+          <img id="cap-img-register"
+               src="{{ captcha_img }}"
+               alt="CAPTCHA"
+               class="captcha-img"
+               width="220"
+               height="70"
+               onclick="refreshCaptcha('cap-img-register')"
+               title="Click to refresh"
+               style="border-radius:8px;border:1px solid var(--border);cursor:pointer">
+          <button type="button"
+                  class="btn btn-ghost btn-sm"
+                  onclick="refreshCaptcha('cap-img-register')"
+                  style="font-size:18px">↻</button>
+        </div>
+        <div style="margin-top:10px">
+          <input type="text"
+                 name="captcha"
+                 placeholder="· · · · ·"
+                 maxlength="5"
+                 autocomplete="off"
+                 required
+                 style="text-transform:uppercase;letter-spacing:6px;font-size:18px;text-align:center">
+        </div>
+        <div class="input-hint">// type the 5 characters shown above (case-insensitive)</div>
+      </div>
+
+      <button type="submit" class="btn btn-green" style="width:100%;justify-content:center;padding:12px;font-size:14px;margin-top:16px">
+        ✦ Create Account
+      </button>
+    </form>
+
+    <hr>
+    <div style="text-align:center;font-size:13px;color:var(--text3)">
+      Already have an account?
+      <a href="{{ url_for('login') }}" style="color:var(--primary);font-weight:700">Sign in →</a>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggle(id, btn) {
+  const i = document.getElementById(id);
+  i.type = i.type === 'password' ? 'text' : 'password';
+  btn.textContent = i.type === 'password' ? '👁' : '🙈';
+}
+function refreshCaptcha(imgId) {
+  fetch('/captcha-refresh')
+    .then(r => r.json())
+    .then(d => { document.getElementById(imgId).src = d.image; });
+}
+function checkStrength(inp) {
+  const v = inp.value;
+  let s = 0;
+  if(v.length >= 8) s++;
+  if(/[A-Z]/.test(v)) s++;
+  if(/[0-9]/.test(v)) s++;
+  if(/[^A-Za-z0-9]/.test(v)) s++;
+  const colors = ['var(--danger)','var(--warn)','var(--warn)','var(--accent)','var(--accent)'];
+  const labels = ['// too short','// weak','// fair','// good','// strong ✓'];
+  document.getElementById('str-bar').style.width = (s * 25) + '%';
+  document.getElementById('str-bar').style.background = colors[s];
+  document.getElementById('str-label').textContent = labels[s];
+}
+function checkMatch() {
+  const p1 = document.getElementById('pwd1').value;
+  const p2 = document.getElementById('pwd2').value;
+  const lbl = document.getElementById('match-label');
+  if (!p2) { lbl.textContent = '// must match above'; lbl.style.color = 'var(--text3)'; return; }
+  if (p1 === p2) { lbl.textContent = '// ✓ passwords match'; lbl.style.color = 'var(--accent)'; }
+  else           { lbl.textContent = '// ✕ passwords do not match'; lbl.style.color = 'var(--danger)'; }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Documents — NeuralRAG{% endblock %}
+{% block page_title %}◫ Knowledge Base{% endblock %}
+{% block page_sub %}{{ docs|length }} document(s) found{% endblock %}
+
+{% block topbar_right %}
+  <div style="display:flex;gap:8px">
+    <a href="{{ url_for('doc_upload') }}" class="btn btn-ghost btn-sm">
+      ⬆ Upload
+    </a>
+    <a href="{{ url_for('doc_create') }}" class="btn btn-primary btn-sm">
+      ＋ New Document
+    </a>
+  </div>
+{% endblock %}
+{% block content %}
+<!-- SEARCH & FILTER BAR -->
+<form method="GET" action="{{ url_for('documents') }}" style="margin-bottom:20px">
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+    <div style="flex:1;min-width:200px">
+      <label>Search</label>
+      <input type="search" name="q" value="{{ search }}" placeholder="Search title or content…">
+    </div>
+    <div style="min-width:140px">
+      <label>Category</label>
+      <select name="cat">
+        <option value="">All Categories</option>
+        {% for c in all_cats %}
+        <option value="{{ c.category }}" {% if sel_cat==c.category %}selected{% endif %}>{{ c.category }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;align-items:flex-end">
+      <button type="submit" class="btn btn-primary btn-sm">⌕ Filter</button>
+      {% if search or sel_cat or sel_tag %}
+      <a href="{{ url_for('documents') }}" class="btn btn-ghost btn-sm">✕ Clear</a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if all_tags %}
+  <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+    <span class="text-muted" style="font-size:11px">TAGS:</span>
+    {% for t in all_tags %}
+    <a href="{{ url_for('documents', tag=t) }}"
+       class="tag {% if sel_tag==t %}" style="background:rgba(88,166,255,.2);border-color:var(--primary){% endif %}">{{ t }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+</form>
+
+<!-- DOCUMENTS TABLE -->
+{% if docs %}
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th style="width:40%">Title</th>
+        <th>Category</th>
+        <th>Tags</th>
+        <th>Words</th>
+        <th>Updated</th>
+        <th style="text-align:right">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for doc in docs %}
+      <tr>
+        <td>
+          <a href="{{ url_for('doc_view', doc_id=doc.id) }}"
+             style="font-weight:700;color:var(--text);text-decoration:none"
+             onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text)'">
+            {{ doc.title }}
+          </a>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px;font-family:'Space Mono',monospace">
+            {{ doc.content[:80] }}{% if doc.content|length > 80 %}…{% endif %}
+          </div>
+        </td>
+        <td><span class="badge badge-blue">{{ doc.category }}</span></td>
+        <td>
+          {% if doc.tags %}
+            {% for tag in doc.tags.split(',') %}
+              {% if tag.strip() %}<span class="tag">{{ tag.strip() }}</span>{% endif %}
+            {% endfor %}
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        <td class="mono" style="color:var(--text2)">{{ doc.word_count }}</td>
+        <td class="mono" style="color:var(--text3);font-size:11px">{{ doc.updated_at[:10] }}</td>
+        <td>
+          <div class="tr-actions">
+            <a href="{{ url_for('doc_view', doc_id=doc.id) }}" class="btn btn-ghost btn-xs" title="View">⊙</a>
+            <a href="{{ url_for('doc_edit', doc_id=doc.id) }}" class="btn btn-ghost btn-xs" title="Edit">✎</a>
+            <form method="POST" action="{{ url_for('doc_delete', doc_id=doc.id) }}"
+                  onsubmit="return confirm('Delete this document?')">
+              <button type="submit" class="btn btn-danger btn-xs" title="Delete">✕</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card">
+  <div class="empty-state">
+    <div class="empty-icon">◫</div>
+    <div class="empty-title">No documents found</div>
+    <div class="empty-sub">{% if search or sel_cat or sel_tag %}Try adjusting your filters.{% else %}Add your first document to build your knowledge base.{% endif %}</div>
+    <a href="{{ url_for('doc_create') }}" class="btn btn-primary btn-sm" style="margin-top:16px">＋ Add Document</a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Chat Sessions — NeuralRAG{% endblock %}
+{% block page_title %}◈ Chat Sessions{% endblock %}
+{% block page_sub %}rag-powered ai conversations{% endblock %}
+
+{% block topbar_right %}
+  <a href="{{ url_for('chat_new') }}" class="btn btn-green btn-sm">◉ New Chat</a>
+{% endblock %}
+
+{% block content %}
+{% if sessions %}
+<div style="display:flex;flex-direction:column;gap:10px;max-width:780px">
+  {% for s in sessions %}
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:16px;transition:.15s"
+       onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+    <div style="width:44px;height:44px;border-radius:10px;background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">◈</div>
+    <div style="flex:1;min-width:0">
+      <a href="{{ url_for('chat_session', session_id=s.id) }}"
+         style="font-size:15px;font-weight:700;color:var(--text);text-decoration:none;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"
+         onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">
+        {{ s.title }}
+      </a>
+      <div class="text-muted" style="margin-top:4px">{{ s.msg_count }} message{% if s.msg_count != 1 %}s{% endif %} · {{ s.created_at[:16].replace('T',' ') }}</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-shrink:0">
+      <a href="{{ url_for('chat_session', session_id=s.id) }}" class="btn btn-ghost btn-xs">Open →</a>
+      <form method="POST" action="{{ url_for('chat_delete', session_id=s.id) }}"
+            onsubmit="return confirm('Delete this chat session?')">
+        <button type="submit" class="btn btn-danger btn-xs">✕</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card" style="max-width:500px">
+  <div class="empty-state">
+    <div class="empty-icon">◈</div>
+    <div class="empty-title">No chat sessions yet</div>
+    <div class="empty-sub">Start a chat to query your knowledge base with AI</div>
+    <a href="{{ url_for('chat_new') }}" class="btn btn-green btn-sm" style="margin-top:16px">◉ Start New Chat</a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

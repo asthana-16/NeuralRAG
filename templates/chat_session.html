@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% block title %}{{ chat_sess.title }} — NeuralRAG{% endblock %}
+{% block page_title %}◈ {{ chat_sess.title[:40] }}{% endblock %}
+{% block page_sub %}{{ doc_count }} doc(s) in knowledge base · {% if has_api_key %}🟢 api connected{% else %}🔴 demo mode{% endif %}{% endblock %}
+
+{% block topbar_right %}
+  <div style="display:flex;gap:8px">
+    <a href="{{ url_for('chat_list') }}" class="btn btn-ghost btn-sm">← Sessions</a>
+    <a href="{{ url_for('chat_new') }}" class="btn btn-green btn-sm">◉ New Chat</a>
+  </div>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;flex-direction:column;height:calc(100vh - 130px);max-width:900px">
+  <!-- Messages area -->
+  <div id="msg-area" style="flex:1;overflow-y:auto;padding:4px 0;margin-bottom:16px;display:flex;flex-direction:column;gap:16px">
+
+    {% if not messages %}
+    <div style="text-align:center;padding:60px 20px;color:var(--text3)">
+      <div style="font-size:40px;margin-bottom:12px">◈</div>
+      <div style="font-size:16px;font-weight:700;color:var(--text2);margin-bottom:6px">Start a conversation</div>
+      <div style="font-size:12px;font-family:'Space Mono',monospace">
+        {% if doc_count == 0 %}
+        ⚠ No documents in knowledge base. <a href="{{ url_for('doc_create') }}">Add some →</a>
+        {% else %}
+        Ask any question about your {{ doc_count }} document(s)
+        {% endif %}
+      </div>
+      {% if not has_api_key %}
+      <div style="margin-top:16px;padding:10px 16px;background:rgba(210,153,34,.08);border:1px solid rgba(210,153,34,.2);border-radius:8px;font-size:12px;color:var(--warn);font-family:'Space Mono',monospace">
+        ⚠ Demo mode: <a href="{{ url_for('settings') }}" style="color:var(--warn)">add API key in Settings</a> for real AI responses
+      </div>
+      {% endif %}
+      <!-- Starter questions -->
+      {% if doc_count > 0 %}
+      <div style="margin-top:24px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center">
+        {% set examples = ["What are the main topics covered?", "Summarize the key points", "What should I know first?"] %}
+        {% for q in examples %}
+        <button class="btn btn-ghost btn-sm" onclick="sendStarter(this)">{{ q }}</button>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% for msg in messages %}
+    <div class="msg-bubble {{ msg.role }}" data-role="{{ msg.role }}">
+      {% if msg.role == 'user' %}
+      <div style="display:flex;justify-content:flex-end">
+        <div style="max-width:70%;background:var(--primary-d);color:#fff;padding:12px 16px;border-radius:12px 12px 4px 12px;font-size:14px;line-height:1.6;font-weight:500">
+          {{ msg.content }}
+        </div>
+      </div>
+      {% else %}
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <div style="width:32px;height:32px;border-radius:8px;background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.2);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:2px">🧠</div>
+        <div style="flex:1;min-width:0">
+          <div style="background:var(--surface2);border:1px solid var(--border);padding:14px 16px;border-radius:4px 12px 12px 12px;font-size:14px;line-height:1.7">{{ msg.content }}</div>
+          {% set sources = msg.sources | from_json %}
+          {% if sources %}
+          <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            <span style="font-size:10px;color:var(--text3);font-family:'Space Mono',monospace">SOURCES:</span>
+            {% for src in sources %}
+            <a href="{{ url_for('doc_view', doc_id=src.id) }}" class="badge badge-green" style="text-decoration:none;font-size:10px">{{ src.title[:30] }}{% if src.title|length > 30 %}…{% endif %}</a>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+
+    <!-- Typing indicator -->
+    <div id="typing" style="display:none;align-items:flex-start;gap:10px">
+      <div style="width:32px;height:32px;border-radius:8px;background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.2);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🧠</div>
+      <div style="background:var(--surface2);border:1px solid var(--border);padding:14px 16px;border-radius:4px 12px 12px 12px">
+        <div style="display:flex;gap:5px;align-items:center">
+          <div class="dot-pulse" style="width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse 1s infinite .0s"></div>
+          <div class="dot-pulse" style="width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse 1s infinite .2s"></div>
+          <div class="dot-pulse" style="width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse 1s infinite .4s"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input area -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px">
+    <div style="display:flex;gap:10px;align-items:flex-end">
+      <textarea id="query-input" placeholder="Ask a question about your documents…"
+                style="flex:1;min-height:52px;max-height:180px;resize:none;border-radius:8px;font-family:'Syne',sans-serif"
+                rows="2" onkeydown="handleKey(event)"></textarea>
+      <button id="send-btn" onclick="sendMessage()" class="btn btn-green" style="height:52px;padding:0 20px;flex-shrink:0">
+        ⎆ Send
+      </button>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:var(--text3);font-family:'Space Mono',monospace">
+      Enter to send · Shift+Enter for new line
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes pulse { 0%,100%{opacity:.3;transform:scale(.8)} 50%{opacity:1;transform:scale(1)} }
+</style>
+
+<script>
+const SESSION_ID = {{ chat_sess.id }};
+const msgArea   = document.getElementById('msg-area');
+const qInput    = document.getElementById('query-input');
+const sendBtn   = document.getElementById('send-btn');
+const typing    = document.getElementById('typing');
+
+function scrollBottom() {
+  msgArea.scrollTop = msgArea.scrollHeight;
+}
+scrollBottom();
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function sendStarter(btn) { qInput.value = btn.textContent; sendMessage(); }
+
+async function sendMessage() {
+  const query = qInput.value.trim();
+  if (!query) return;
+
+  qInput.value = '';
+  sendBtn.disabled = true;
+  sendBtn.textContent = '…';
+
+  // Append user bubble
+  appendBubble('user', query, null);
+  typing.style.display = 'flex';
+  scrollBottom();
+
+  try {
+    const res = await fetch(`/chat/${SESSION_ID}/send`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({query})
+    });
+    const data = await res.json();
+    typing.style.display = 'none';
+    if (data.error) {
+      appendBubble('assistant', '⚠ Error: ' + data.error, null);
+    } else {
+      appendBubble('assistant', data.answer, data.sources);
+    }
+  } catch(e) {
+    typing.style.display = 'none';
+    appendBubble('assistant', '⚠ Network error. Please try again.', null);
+  }
+
+  sendBtn.disabled = false;
+  sendBtn.textContent = '⎆ Send';
+  scrollBottom();
+}
+
+function appendBubble(role, content, sources) {
+  const wrapper = document.createElement('div');
+  wrapper.className = `msg-bubble ${role}`;
+  wrapper.dataset.role = role;
+
+  if (role === 'user') {
+    wrapper.innerHTML = `
+      <div style="display:flex;justify-content:flex-end">
+        <div style="max-width:70%;background:var(--primary-d);color:#fff;padding:12px 16px;border-radius:12px 12px 4px 12px;font-size:14px;line-height:1.6;font-weight:500">${escHtml(content)}</div>
+      </div>`;
+  } else {
+    let srcHtml = '';
+    if (sources && sources.length) {
+      srcHtml = `<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <span style="font-size:10px;color:var(--text3);font-family:'Space Mono',monospace">SOURCES:</span>
+        ${sources.map(s=>`<a href="/documents/${s.id}" class="badge badge-green" style="text-decoration:none;font-size:10px">${escHtml(s.title.substring(0,30))}${s.title.length>30?'…':''}</a>`).join('')}
+      </div>`;
+    }
+    wrapper.innerHTML = `
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <div style="width:32px;height:32px;border-radius:8px;background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.2);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:2px">🧠</div>
+        <div style="flex:1;min-width:0">
+          <div style="background:var(--surface2);border:1px solid var(--border);padding:14px 16px;border-radius:4px 12px 12px 12px;font-size:14px;line-height:1.7;white-space:pre-wrap">${escHtml(content)}</div>
+          ${srcHtml}
+        </div>
+      </div>`;
+  }
+  msgArea.insertBefore(wrapper, typing);
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+{% endblock %}

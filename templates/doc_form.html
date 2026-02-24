@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} Document — NeuralRAG{% endblock %}
+{% block page_title %}◫ {{ action }} Document{% endblock %}
+{% block page_sub %}{% if action=='Edit' %}editing: {{ doc.title }}{% else %}add to knowledge base{% endif %}{% endblock %}
+
+{% block topbar_right %}
+  <a href="{{ url_for('documents') }}" class="btn btn-ghost btn-sm">← Back</a>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:760px">
+  <form method="POST">
+    <div class="card">
+      <div class="form-row">
+        <label>Document Title *</label>
+        <input type="text" name="title" value="{{ doc.title if doc else '' }}"
+               placeholder="Enter a descriptive title…" required autofocus>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-row">
+          <label>Category</label>
+          <select name="category">
+            {% set cats = ['General','Technology','Science','Business','History','Healthcare','Legal','Finance','Education','Other'] %}
+            {% for c in cats %}
+            <option value="{{ c }}" {% if doc and doc.category==c %}selected{% elif not doc and c=='General' %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+          </select>
+          <div class="input-hint">// organize by topic</div>
+        </div>
+        <div class="form-row">
+          <label>Tags</label>
+          <input type="text" name="tags" value="{{ doc.tags if doc else '' }}"
+                 placeholder="ai, python, research (comma-separated)">
+          <div class="input-hint">// comma-separated keywords</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>Content *</label>
+        <textarea name="content" id="content-area" rows="14"
+                  placeholder="Paste or type your document content here. This will be indexed for RAG retrieval…" required>{{ doc.content if doc else '' }}</textarea>
+        <div style="display:flex;justify-content:space-between;margin-top:6px">
+          <div class="input-hint">// this content will be used for semantic retrieval</div>
+          <div class="input-hint" id="word-count-display">0 words</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <a href="{{ url_for('documents') }}" class="btn btn-ghost">Cancel</a>
+        {% if doc %}
+        <a href="{{ url_for('doc_view', doc_id=doc.id) }}" class="btn btn-ghost">View</a>
+        {% endif %}
+        <button type="submit" class="btn btn-primary">
+          {% if action=='Edit' %}✔ Save Changes{% else %}＋ Create Document{% endif %}
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+const ta = document.getElementById('content-area');
+const wc = document.getElementById('word-count-display');
+function updateWC() {
+  const words = ta.value.trim().split(/\s+/).filter(w=>w.length>0);
+  wc.textContent = `${words.length} word${words.length!==1?'s':''}`;
+}
+ta.addEventListener('input', updateWC);
+updateWC();
+</script>
+{% endblock %}

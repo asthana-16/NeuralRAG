@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ doc.title }} — NeuralRAG{% endblock %}
+{% block page_title %}◫ Document{% endblock %}
+{% block page_sub %}{{ doc.title[:50] }}{% endblock %}
+
+{% block topbar_right %}
+  <div style="display:flex;gap:8px">
+    <a href="{{ url_for('doc_edit', doc_id=doc.id) }}" class="btn btn-ghost btn-sm">✎ Edit</a>
+    <form method="POST" action="{{ url_for('doc_delete', doc_id=doc.id) }}"
+          onsubmit="return confirm('Permanently delete this document?')">
+      <button type="submit" class="btn btn-danger btn-sm">✕ Delete</button>
+    </form>
+    <a href="{{ url_for('documents') }}" class="btn btn-ghost btn-sm">← Back</a>
+  </div>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:800px">
+  <div class="card">
+    <!-- Header -->
+    <div style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+      <h1 style="font-size:22px;font-weight:800;letter-spacing:-.3px;margin-bottom:12px">{{ doc.title }}</h1>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span class="badge badge-blue">{{ doc.category }}</span>
+        <span class="text-muted">◌ {{ doc.word_count }} words</span>
+        <span class="text-muted">· Created {{ doc.created_at[:10] }}</span>
+        {% if doc.updated_at[:10] != doc.created_at[:10] %}
+        <span class="text-muted">· Updated {{ doc.updated_at[:10] }}</span>
+        {% endif %}
+      </div>
+      {% if doc.tags %}
+      <div style="margin-top:10px">
+        {% for tag in doc.tags.split(',') %}
+          {% if tag.strip() %}<span class="tag">{{ tag.strip() }}</span>{% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Content -->
+    <div id="doc-content" style="font-size:14px;line-height:1.8;color:var(--text);white-space:pre-wrap;font-family:'Space Mono',monospace;background:var(--surface2);padding:20px;border-radius:8px;border:1px solid var(--border);max-height:60vh;overflow-y:auto">{{ doc.content }}</div>
+
+    <!-- Actions -->
+    <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap">
+      <a href="{{ url_for('doc_edit', doc_id=doc.id) }}" class="btn btn-primary btn-sm">✎ Edit Document</a>
+      <a href="{{ url_for('chat_new') }}" class="btn btn-green btn-sm">◉ Chat About This</a>
+      <form method="POST" action="{{ url_for('doc_delete', doc_id=doc.id) }}"
+            onsubmit="return confirm('Permanently delete this document?')" style="margin-left:auto">
+        <button type="submit" class="btn btn-danger btn-sm">✕ Delete</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

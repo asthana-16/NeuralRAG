@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Settings — NeuralRAG{% endblock %}
+{% block page_title %}◎ Settings{% endblock %}
+{% block page_sub %}account & configuration{% endblock %}
+
+{% block content %}
+<div style="max-width:720px;display:flex;flex-direction:column;gap:24px">
+
+  <!-- PROFILE -->
+  <div class="card">
+    <div class="card-title"><span class="ct-icon">◌</span> Profile</div>
+    <form method="POST">
+      <input type="hidden" name="action" value="profile">
+      <div class="grid-2">
+        <div class="form-row">
+          <label>Username</label>
+          <input type="text" value="{{ user.username }}" disabled style="opacity:.5;cursor:not-allowed">
+          <div class="input-hint">// username cannot be changed</div>
+        </div>
+        <div class="form-row">
+          <label>Full Name</label>
+          <input type="text" name="full_name" value="{{ user.full_name or '' }}" placeholder="Your full name">
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Email</label>
+        <input type="email" value="{{ user.email }}" disabled style="opacity:.5;cursor:not-allowed">
+      </div>
+      <div class="form-row">
+        <label>Bio</label>
+        <textarea name="bio" rows="3" placeholder="Tell us about yourself…">{{ user.bio or '' }}</textarea>
+      </div>
+      <div class="form-row">
+        <label>Avatar Color</label>
+        <div style="display:flex;gap:10px;align-items:center">
+          {% set colors = ['#6c63ff','#f43f5e','#10b981','#f59e0b','#3b82f6','#8b5cf6','#ec4899','#14b8a6'] %}
+          {% for c in colors %}
+          <label style="cursor:pointer;margin:0">
+            <input type="radio" name="avatar_color" value="{{ c }}"
+                   {% if user.avatar_color == c %}checked{% endif %}
+                   style="display:none" onchange="updateAvPreview(this)">
+            <div style="width:30px;height:30px;border-radius:8px;background:{{ c }};border:2px solid {{ 'var(--primary)' if user.avatar_color==c else 'transparent' }};cursor:pointer;transition:.15s"
+                 onclick="selectColor(this, '{{ c }}')"></div>
+          </label>
+          {% endfor %}
+          <div id="av-preview" style="width:40px;height:40px;border-radius:10px;background:{{ user.avatar_color }};display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff;margin-left:8px;border:2px solid var(--border)">
+            {{ user.username[0].upper() }}
+          </div>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <button type="submit" class="btn btn-primary">✔ Save Profile</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- CHANGE PASSWORD -->
+  <div class="card">
+    <div class="card-title"><span class="ct-icon">⬡</span> Change Password</div>
+    <form method="POST">
+      <input type="hidden" name="action" value="password">
+      <div class="form-row">
+        <label>Current Password</label>
+        <input type="password" name="current_password" placeholder="Enter current password" required>
+      </div>
+      <div class="grid-2">
+        <div class="form-row">
+          <label>New Password</label>
+          <input type="password" name="new_password" id="np" placeholder="Min 8 characters" required minlength="8">
+        </div>
+        <div class="form-row">
+          <label>Confirm New Password</label>
+          <input type="password" name="confirm_new" id="cn" placeholder="Re-enter new password" required>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <button type="submit" class="btn btn-primary">⎆ Change Password</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- API KEY -->
+  <div class="card" style="border-color:{% if has_api %}rgba(63,185,80,.3){% else %}rgba(210,153,34,.3){% endif %}">
+    <div class="card-title">
+      <span class="ct-icon">◉</span> Anthropic API Key
+      {% if has_api %}
+      <span class="badge badge-green" style="margin-left:8px">● Connected</span>
+      {% else %}
+      <span class="badge badge-warn" style="margin-left:8px">● Demo Mode</span>
+      {% endif %}
+    </div>
+    <form method="POST">
+      <input type="hidden" name="action" value="api_key">
+      <div class="form-row">
+        <label>API Key</label>
+        <input type="password" name="api_key" placeholder="sk-ant-api03-…" autocomplete="off"
+               value="{{ '●●●●●●●●●●●●●●●●' if has_api else '' }}">
+        <div class="input-hint">
+          // get your key at <a href="https://console.anthropic.com" target="_blank" style="color:var(--primary)">console.anthropic.com</a>
+          · stored in memory only (resets on restart)
+        </div>
+      </div>
+      {% if not has_api %}
+      <div style="padding:12px;border-radius:8px;background:rgba(210,153,34,.08);border:1px solid rgba(210,153,34,.2);font-size:12px;color:var(--warn);font-family:'Space Mono',monospace;margin-bottom:16px">
+        ⚠ Without an API key, you'll see demo responses instead of real Claude AI answers.
+        The RAG retrieval still works — you just won't get intelligent responses.
+      </div>
+      {% endif %}
+      <div style="text-align:right">
+        <button type="submit" class="btn btn-primary">⎆ Update API Key</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ACCOUNT INFO -->
+  <div class="card card-sm">
+    <div class="card-title"><span class="ct-icon">◫</span> Account Info</div>
+    <table style="border:none">
+      <tr><td style="border:none;padding:6px 0;color:var(--text3);font-family:'Space Mono',monospace;font-size:12px;width:160px">USER ID</td><td style="border:none;padding:6px 0;font-family:'Space Mono',monospace;font-size:12px">#{{ user.id }}</td></tr>
+      <tr><td style="border:none;padding:6px 0;color:var(--text3);font-family:'Space Mono',monospace;font-size:12px">MEMBER SINCE</td><td style="border:none;padding:6px 0;font-family:'Space Mono',monospace;font-size:12px">{{ user.created_at[:10] }}</td></tr>
+      <tr><td style="border:none;padding:6px 0;color:var(--text3);font-family:'Space Mono',monospace;font-size:12px">STATUS</td><td style="border:none;padding:6px 0"><span class="badge badge-green">Active</span></td></tr>
+    </table>
+  </div>
+
+</div>
+
+<script>
+function selectColor(el, color) {
+  document.querySelectorAll('[name=avatar_color]').forEach(r => {
+    r.checked = r.value === color;
+    r.nextElementSibling.style.borderColor = r.value === color ? 'var(--primary)' : 'transparent';
+  });
+  document.getElementById('av-preview').style.background = color;
+}
+</script>
+{% endblock %}
