@@ -39,23 +39,23 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Font path for captcha
 # REPLACE KAR YE SE:
+# REPLACE KAR YE SE:
 _FONT_CANDIDATES = [
-    'C:/Windows/Fonts/arialbd.ttf',      # Windows Arial Bold
-    'C:/Windows/Fonts/arial.ttf',         # Windows Arial
-    'C:/Windows/Fonts/verdana.ttf',       # Windows Verdana
-    'C:/Windows/Fonts/tahoma.ttf',        # Windows Tahoma
-    'C:/Windows/Fonts/trebucbd.ttf',      # Windows Trebuchet Bold
-    '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',   # Linux
+    # Windows
+    'C:/Windows/Fonts/arialbd.ttf',
+    'C:/Windows/Fonts/arial.ttf',
+    'C:/Windows/Fonts/verdana.ttf',
+    # Linux (Railway server)
+    '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
     '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf',
+    '/usr/share/fonts/truetype/freefont/FreeSansBold.ttf',
+    '/usr/share/fonts/opentype/urw-base35/NimbusSans-Bold.otf',
 ]
 FONT_PATH = None
 for _fp in _FONT_CANDIDATES:
     if os.path.exists(_fp):
         FONT_PATH = _fp
-        print(f"✅ Font loaded: {_fp}")
         break
-if not FONT_PATH:
-    print("⚠️ No font found — captcha will use default tiny font")
 
 
 # ──────────────────────────────────────────────────────────
