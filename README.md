@@ -11,6 +11,24 @@ NeuralRAG uses **Retrieval-Augmented Generation (RAG)** — instead of asking AI
 it first finds the most relevant documents from your knowledge base, then sends that context along
 with your question to Gemini AI. Answers are grounded in *your* content.
 
+## 📸 Screenshots
+
+### 🔐 Signup Page
+![Signup Page](Screenshots/Signup-Page.png)
+
+### 📊 Dashboard
+![Dashboard](Screenshots/Dashboard-Page.png)
+
+### 📄 Documents Page
+![Documents](Screenshots/Document_Page.png)
+
+### 💬 Chat Session
+![Chat Session](Screenshots/ChatSession-Page.png)
+
+### ⚙️ Settings
+![Settings 1](Screenshots/Settings1-Page.png)
+![Settings 2](Screenshots/Settings2-Page.png)
+
 **Simple flow:**
 
 ```
